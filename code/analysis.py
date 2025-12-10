@@ -185,7 +185,10 @@ class SelectionSheetAnalysis:
         """
         tables = self.pdf_reader.extract_tables(pages=pages, **kwargs)
         if tables:
-            self.current_data = tables[0]  # Use first table by default
+            self.current_data = pd.concat(tables, ignore_index=True)
+            print(f"Loaded and combined {len(tables)} table(s) from PDF")
+        else:
+            self.current_data = tables[0]
             print(f"Loaded {len(tables)} table(s) from PDF")
         return self
     
@@ -243,11 +246,17 @@ class SelectionSheetAnalysis:
     def display_room_stats(self) -> None:
         df = self.get_data()
         #make a bar graph of 'suite_size_(if_applicable)'and count
-        suite_counts = df['suite_size_(if_applicable)'].value_counts()
-        suite_counts.plot(kind='bar', figsize=(10, 6))
+        df['room_suite_combo'] = df['room_type'] + '-' + df['suite_size_(if_applicable)'].astype(str)
+        suite_counts = df['room_suite_combo'].value_counts()
+        ax = suite_counts.plot(kind='bar', figsize=(10, 6))
+
+        for container in ax.containers:
+            ax.bar_label(container, fmt='%d')
+
         plt.xlabel('Suite Size')
         plt.ylabel('Count')
         plt.title('Distribution of Suite Sizes')
+        plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         plt.show()
 
@@ -266,11 +275,11 @@ if __name__ == "__main__":
     analysis.load_data().process_data().analyze()
     
     # Display summary
-    analysis.display_summary()
+    #analysis.display_summary()
     analysis.display_room_stats()
     
     # Get the data for further analysis
-    df = analysis.get_data()
-    print("\n" + "="*50)
-    print("Data is ready for further analysis!")
-    print("="*50)
+    # df = analysis.get_data()
+    # print("\n" + "="*50)
+    # print("Data is ready for further analysis!")
+    # print("="*50)
